@@ -122,7 +122,7 @@ export const LoginPage = () => {
                     <FormItem>
                       <FormLabel>Foydalanuvchi nomi</FormLabel>
                       <FormControl>
-                        <Input placeholder="admin" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
