@@ -82,7 +82,11 @@ export const LoginPage = () => {
         return;
       }
       if (err?.name === "SecurityError") {
-        setError("Kamera/Face ID faqat xavfsiz ulanishda (HTTPS) ishlaydi.");
+        setError(
+          window.isSecureContext
+            ? "Face ID bu domenda ishlamaydi — server boshqa (asosiy) domen uchun sozlangan."
+            : "Face ID faqat xavfsiz ulanishda (HTTPS) ishlaydi."
+        );
         return;
       }
       console.error("Face ID login error", err);
