@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser"
 import {
   Settings,
   AlertTriangle,
@@ -7,8 +8,15 @@ import {
   CheckCircle2,
   Database,
   Users,
+  ScanFace,
+  ShieldCheck,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
+import {
+  useDeletePasskey,
+  usePasskeys,
+  useRegisterPasskey,
+} from "@/features/auth/api/webauthn"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -22,6 +30,88 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+
+const SecuritySection = () => {
+  const [error, setError] = useState<string | null>(null)
+  const { data: passkeys, isLoading } = usePasskeys()
+  const registerMutation = useRegisterPasskey()
+  const deleteMutation = useDeletePasskey()
+
+  const onRegister = async () => {
+    if (!browserSupportsWebAuthn()) {
+      setError("Bu brauzer Face ID/Windows Hello orqali kirishni qo'llab-quvvatlamaydi.")
+      return
+    }
+    setError(null)
+    try {
+      await registerMutation.mutateAsync()
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") return
+      setError(apiErrorMessage(err))
+    }
+  }
+
+  return (
+    <div className="rounded-lg border bg-white">
+      <div className="flex items-center gap-2 border-b bg-gray-50/60 px-4 py-3 rounded-t-md">
+        <ShieldCheck className="h-4 w-4 text-gray-500" />
+        <h2 className="text-sm font-bold text-gray-800">Face ID bilan kirish</h2>
+      </div>
+      <div className="p-4 space-y-4">
+        <p className="text-sm text-gray-600">
+          Qurilmangizning Face ID/Windows Hello imkoniyatini yoqib, parolsiz tizimga kiring.
+        </p>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 whitespace-pre-line">
+            {error}
+          </div>
+        )}
+
+        {!isLoading && passkeys && passkeys.length > 0 && (
+          <div className="space-y-2">
+            {passkeys.map((pk) => (
+              <div
+                key={pk.id}
+                className="flex items-center justify-between rounded-md border px-3 py-2"
+              >
+                <div className="text-sm">
+                  <div className="font-medium text-gray-800">
+                    {pk.device_label || "Noma'lum qurilma"}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Qo'shildi: {new Date(pk.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => deleteMutation.mutate(pk.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Button
+          variant="outline"
+          disabled={registerMutation.isPending}
+          onClick={onRegister}
+        >
+          {registerMutation.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <ScanFace className="h-4 w-4 mr-2" />
+          )}
+          Face ID qo'shish
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 // Natija jadvalidagi nomlarni o'zbekchaga o'girish
 const TABLE_LABELS: Record<string, string> = {
@@ -79,11 +169,9 @@ export const SettingsPage = () => {
 
   if (!isAdmin) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <h1 className="text-2xl font-bold tracking-tight">Sozlamalar</h1>
-        <p className="text-sm text-gray-500">
-          Bu sahifa faqat administratorlar uchun.
-        </p>
+        <SecuritySection />
       </div>
     )
   }
@@ -118,6 +206,8 @@ export const SettingsPage = () => {
           <p className="text-sm text-gray-500">Tizim boshqaruvi</p>
         </div>
       </div>
+
+      <SecuritySection />
 
       {/* Muvaffaqiyat xabari */}
       {result && (

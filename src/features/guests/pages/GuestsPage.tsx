@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone } from "lucide-react";
+import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, Camera } from "lucide-react";
 import {
   useGuests,
   useCreateGuest,
@@ -10,6 +10,7 @@ import {
 } from "../api/guests";
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
+import { CameraCaptureDialog } from "../components/CameraCaptureDialog";
 import type { Guest } from "@/types/api";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
@@ -72,6 +73,7 @@ export const GuestsPage = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -452,12 +454,23 @@ export const GuestsPage = () => {
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-xs text-gray-600 font-medium">Passport surati / mehmon fotosi</span>
-                  <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
-                  <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
-                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-xs text-gray-600 font-medium text-center px-1">Fayldan yuklash</span>
+                    <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
+                    <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
+                  </label>
+                  <button
+                    type="button"
+                    className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors"
+                    onClick={() => setCameraOpen(true)}
+                  >
+                    <Camera className="h-5 w-5 text-gray-400" />
+                    <span className="text-xs text-gray-600 font-medium text-center px-1">Yuzdan olish (kamera)</span>
+                    <span className="text-[11px] text-gray-400">Kamerani ochish</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -473,6 +486,12 @@ export const GuestsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={handlePhoto}
+      />
     </div>
   );
 };
