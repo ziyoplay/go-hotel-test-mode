@@ -9,6 +9,7 @@ import {
 } from "../api/rooms"
 import type { RoomType } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
+import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,6 +34,7 @@ import { cn } from "@/lib/utils"
 export const RoomTypesPage = () => {
   // Xona turlari katalogi mutatsiyalari backendda ADMIN/SUPER_ADMIN uchun ochiq
   const { isAdmin } = usePermissions()
+  const user = useAuthStore((s) => s.user)
 
   const { data: roomTypes = [], isLoading } = useRoomTypes()
 
@@ -105,6 +107,8 @@ export const RoomTypesPage = () => {
           description: description.trim() || undefined,
           capacity: cap >= 1 ? cap : 1,
           base_price: price,
+          // SUPER_ADMIN konteksti uchun: tur qaysi mehmonxonaga tegishli
+          hotelId: user?.hotel_id,
         })
       }
       setModalOpen(false)

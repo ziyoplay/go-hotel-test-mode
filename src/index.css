@@ -42,6 +42,26 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-login-blob: login-blob 16s ease-in-out infinite;
+  --animate-login-rise: login-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-login-shake: login-shake 0.4s ease-in-out;
+}
+
+/* Login sahifasi: orqa fondagi suzuvchi dog'lar, kirish va xato animatsiyalari */
+@keyframes login-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(3rem, -3.5rem) scale(1.15); }
+  66% { transform: translate(-2rem, 2rem) scale(0.9); }
+}
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
 }
 
 @layer base {

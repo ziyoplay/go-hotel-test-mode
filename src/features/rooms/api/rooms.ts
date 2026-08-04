@@ -134,8 +134,10 @@ interface RoomTypePayload {
 export const useCreateRoomType = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: RoomTypePayload) => {
-      const { data } = await api.post<RoomType>('/room-types/', payload);
+    mutationFn: async ({ hotelId, ...payload }: RoomTypePayload & { hotelId?: string }) => {
+      const { data } = await api.post<RoomType>('/room-types/', payload, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['roomTypes'] }),
