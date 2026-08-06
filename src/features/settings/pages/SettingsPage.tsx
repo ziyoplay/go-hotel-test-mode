@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { browserSupportsWebAuthn } from "@simplewebauthn/browser"
 import {
   Settings,
   AlertTriangle,
@@ -13,10 +12,11 @@ import {
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import {
-  useDeletePasskey,
-  usePasskeys,
-  useRegisterPasskey,
-} from "@/features/auth/api/webauthn"
+  useDeleteFaceProfile,
+  useEnrollFace,
+  useFaceProfiles,
+} from "@/features/auth/api/faceauth"
+import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -33,21 +33,18 @@ import { cn } from "@/lib/utils"
 
 const SecuritySection = () => {
   const [error, setError] = useState<string | null>(null)
-  const { data: passkeys, isLoading } = usePasskeys()
-  const registerMutation = useRegisterPasskey()
-  const deleteMutation = useDeletePasskey()
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const { data: profiles, isLoading } = useFaceProfiles()
+  const enrollMutation = useEnrollFace()
+  const deleteMutation = useDeleteFaceProfile()
 
-  const onRegister = async () => {
-    if (!browserSupportsWebAuthn()) {
-      setError("Bu brauzer Face ID/Windows Hello orqali kirishni qo'llab-quvvatlamaydi.")
-      return
-    }
-    setError(null)
+  // Kameradan olingan yuz imzosini serverga saqlaymiz
+  const onDescriptor = async (embedding: number[]): Promise<string | void> => {
     try {
-      await registerMutation.mutateAsync()
+      await enrollMutation.mutateAsync(embedding)
+      setError(null)
     } catch (err: any) {
-      if (err?.name === "NotAllowedError") return
-      setError(apiErrorMessage(err))
+      return apiErrorMessage(err)
     }
   }
 
@@ -55,11 +52,12 @@ const SecuritySection = () => {
     <div className="rounded-lg border bg-white">
       <div className="flex items-center gap-2 border-b bg-gray-50/60 px-4 py-3 rounded-t-md">
         <ShieldCheck className="h-4 w-4 text-gray-500" />
-        <h2 className="text-sm font-bold text-gray-800">Face ID bilan kirish</h2>
+        <h2 className="text-sm font-bold text-gray-800">Yuz bilan kirish</h2>
       </div>
       <div className="p-4 space-y-4">
         <p className="text-sm text-gray-600">
-          Qurilmangizning Face ID/Windows Hello imkoniyatini yoqib, parolsiz tizimga kiring.
+          Kameraga qarab yuzingizni ro'yxatdan o'tkazing — keyin login sahifasida
+          parol o'rniga yuz orqali kira olasiz.
         </p>
 
         {error && (
@@ -68,26 +66,28 @@ const SecuritySection = () => {
           </div>
         )}
 
-        {!isLoading && passkeys && passkeys.length > 0 && (
+        {!isLoading && profiles && profiles.length > 0 && (
           <div className="space-y-2">
-            {passkeys.map((pk) => (
+            {profiles.map((p) => (
               <div
-                key={pk.id}
+                key={p.id}
                 className="flex items-center justify-between rounded-md border px-3 py-2"
               >
                 <div className="text-sm">
                   <div className="font-medium text-gray-800">
-                    {pk.device_label || "Noma'lum qurilma"}
+                    {p.device_label || "Noma'lum qurilma"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    Qo'shildi: {new Date(pk.created_at).toLocaleDateString()}
+                    Qo'shildi: {new Date(p.created_at).toLocaleDateString()}
+                    {p.last_used_at &&
+                      ` · Oxirgi kirish: ${new Date(p.last_used_at).toLocaleDateString()}`}
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   disabled={deleteMutation.isPending}
-                  onClick={() => deleteMutation.mutate(pk.id)}
+                  onClick={() => deleteMutation.mutate(p.id)}
                 >
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
@@ -98,17 +98,27 @@ const SecuritySection = () => {
 
         <Button
           variant="outline"
-          disabled={registerMutation.isPending}
-          onClick={onRegister}
+          disabled={enrollMutation.isPending}
+          onClick={() => {
+            setError(null)
+            setCameraOpen(true)
+          }}
         >
-          {registerMutation.isPending ? (
+          {enrollMutation.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <ScanFace className="h-4 w-4 mr-2" />
           )}
-          Face ID qo'shish
+          Yuzni ro'yxatdan o'tkazish
         </Button>
       </div>
+
+      <FaceCameraDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        title="Yuzni ro'yxatdan o'tkazish"
+        onDescriptor={onDescriptor}
+      />
     </div>
   )
 }

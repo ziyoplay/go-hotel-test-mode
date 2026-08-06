@@ -5,8 +5,8 @@ import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
-import { loginWithPasskey } from "@/features/auth/api/webauthn";
-import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { faceLogin } from "@/features/auth/api/faceauth";
+import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
 import { apiErrorMessage } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ export const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [faceIdLoading, setFaceIdLoading] = useState(false);
+  const [faceDialogOpen, setFaceDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
@@ -65,34 +65,19 @@ export const LoginPage = () => {
     }
   };
 
-  const onFaceIdLogin = async () => {
-    if (!browserSupportsWebAuthn()) {
-      setError("Bu brauzer Face ID/Windows Hello orqali kirishni qo'llab-quvvatlamaydi.");
-      return;
-    }
+  // Kameradan olingan yuz imzosi bilan kirish. Xato matni qaytarilsa,
+  // dialog ochiq qoladi va foydalanuvchi qayta urinadi.
+  const onFaceDescriptor = async (embedding: number[]): Promise<string | void> => {
     try {
-      setFaceIdLoading(true);
-      setError(null);
-      const username = form.getValues("username") || undefined;
-      const data = await loginWithPasskey(username);
+      const data = await faceLogin(embedding);
       await completeLogin(data.access_token, data.refresh_token);
     } catch (err: any) {
-      if (err?.name === "NotAllowedError") {
-        // Foydalanuvchi bekor qildi yoki mos passkey topilmadi — xatolik ko'rsatmaymiz
-        return;
-      }
-      if (err?.name === "SecurityError") {
-        setError(
-          window.isSecureContext
-            ? "Face ID bu domenda ishlamaydi — server boshqa (asosiy) domen uchun sozlangan."
-            : "Face ID faqat xavfsiz ulanishda (HTTPS) ishlaydi."
-        );
-        return;
-      }
-      console.error("Face ID login error", err);
-      setError(apiErrorMessage(err) || "Face ID orqali kirishda xatolik yuz berdi");
-    } finally {
-      setFaceIdLoading(false);
+      const code = err?.response?.data?.error_code;
+      if (code === "FACE_NOT_RECOGNIZED") return "Yuz tanilmadi — qayta urinib ko'ring.";
+      if (code === "FACE_NOT_ENROLLED")
+        return "Hali hech kim yuz orqali ro'yxatdan o'tmagan. Avval parol bilan kirib, Sozlamalardan yuzingizni qo'shing.";
+      console.error("Face login error", err);
+      return apiErrorMessage(err) || "Yuz orqali kirishda xatolik yuz berdi.";
     }
   };
 
@@ -207,7 +192,7 @@ export const LoginPage = () => {
 
               <Button
                 type="submit"
-                disabled={isLoading || faceIdLoading}
+                disabled={isLoading}
                 className="h-11 w-full bg-gradient-to-r from-primary-600 to-indigo-600 text-base font-semibold shadow-lg shadow-primary-600/30 transition-all hover:from-primary-500 hover:to-indigo-500 hover:shadow-primary-500/40 active:scale-[0.98]"
               >
                 {isLoading ? (
@@ -234,11 +219,14 @@ export const LoginPage = () => {
             type="button"
             variant="outline"
             className="h-11 w-full"
-            disabled={faceIdLoading || isLoading}
-            onClick={onFaceIdLogin}
+            disabled={isLoading}
+            onClick={() => {
+              setError(null);
+              setFaceDialogOpen(true);
+            }}
           >
             <ScanFace className="mr-2 h-4 w-4" />
-            {faceIdLoading ? "Tekshirilmoqda..." : "Face ID bilan kirish"}
+            Yuz bilan kirish
           </Button>
         </div>
 
@@ -246,6 +234,13 @@ export const LoginPage = () => {
           © {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi
         </p>
       </div>
+
+      <FaceCameraDialog
+        open={faceDialogOpen}
+        onOpenChange={setFaceDialogOpen}
+        title="Yuz bilan kirish"
+        onDescriptor={onFaceDescriptor}
+      />
     </div>
   );
 };
