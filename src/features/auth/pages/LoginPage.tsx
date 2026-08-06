@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
-import { faceLogin } from "@/features/auth/api/faceauth";
+import { faceLogin, preloadFaceModels } from "@/features/auth/api/faceauth";
 import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
 import { apiErrorMessage } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,9 @@ export const LoginPage = () => {
   // Login ekranida tab sarlavhasi standart nomga qaytadi
   useEffect(() => {
     document.title = "GoHotel";
+    // Yuz aniqlash modellarini fonda oldindan yuklaymiz — "Yuz bilan
+    // kirish" bosilganda kutish bo'lmasligi uchun
+    preloadFaceModels();
   }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({

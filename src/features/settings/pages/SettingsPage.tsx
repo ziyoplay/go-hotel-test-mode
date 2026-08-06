@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Settings,
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import {
+  preloadFaceModels,
   useDeleteFaceProfile,
   useEnrollFace,
   useFaceProfiles,
@@ -37,6 +38,11 @@ const SecuritySection = () => {
   const { data: profiles, isLoading } = useFaceProfiles()
   const enrollMutation = useEnrollFace()
   const deleteMutation = useDeleteFaceProfile()
+
+  // Modellarni fonda oldindan yuklaymiz — tugma bosilganda kutish bo'lmasin
+  useEffect(() => {
+    preloadFaceModels()
+  }, [])
 
   // Kameradan olingan yuz imzosini serverga saqlaymiz
   const onDescriptor = async (embedding: number[]): Promise<string | void> => {
@@ -117,6 +123,7 @@ const SecuritySection = () => {
         open={cameraOpen}
         onOpenChange={setCameraOpen}
         title="Yuzni ro'yxatdan o'tkazish"
+        samples={3}
         onDescriptor={onDescriptor}
       />
     </div>

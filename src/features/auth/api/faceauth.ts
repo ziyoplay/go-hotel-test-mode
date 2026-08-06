@@ -32,18 +32,41 @@ export async function loadFaceModels(): Promise<void> {
   faceapiModule = faceapi;
 }
 
+// Modellarni oldindan (fonda) yuklab qo'yish — kamera ochilganda kutish
+// bo'lmasligi uchun login/sozlamalar sahifasi ochilishida chaqiriladi.
+export function preloadFaceModels(): void {
+  loadFaceModels().catch(() => {
+    // Fon yuklash xatosi jim o'tadi — dialog ochilganda qayta uriniladi
+  });
+}
+
 // Videodagi kadrdan yuz imzosini hisoblaydi. Yuz topilmasa null qaytaradi.
+// inputSize kattaroq (416) — aniqroq aniqlash; scoreThreshold xira/shubhali
+// kadrlarni tashlab yuboradi, ular imzo sifatini buzmasin.
 export async function computeDescriptor(
   video: HTMLVideoElement
 ): Promise<number[] | null> {
   if (!faceapiModule) await loadFaceModels();
   const faceapi = faceapiModule!;
   const detection = await faceapi
-    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+    .detectSingleFace(
+      video,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+    )
     .withFaceLandmarks()
     .withFaceDescriptor();
   if (!detection) return null;
   return Array.from(detection.descriptor);
+}
+
+// Bir nechta imzoning o'rtachasi — yorug'lik/burchak shovqinini kamaytiradi
+export function averageDescriptors(samples: number[][]): number[] {
+  const n = samples.length;
+  const out = new Array<number>(samples[0].length).fill(0);
+  for (const s of samples) {
+    for (let i = 0; i < s.length; i++) out[i] += s[i];
+  }
+  return out.map((v) => v / n);
 }
 
 export async function faceLogin(embedding: number[]) {
