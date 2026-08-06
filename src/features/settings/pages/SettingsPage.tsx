@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils"
 
 const SecuritySection = () => {
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const { data: profiles, isLoading } = useFaceProfiles()
   const enrollMutation = useEnrollFace()
@@ -49,6 +50,7 @@ const SecuritySection = () => {
     try {
       await enrollMutation.mutateAsync(embedding)
       setError(null)
+      setSuccess("Yuzingiz muvaffaqiyatli saqlandi — endi login sahifasida \"Yuz bilan kirish\" ishlaydi.")
     } catch (err: any) {
       return apiErrorMessage(err)
     }
@@ -70,6 +72,20 @@ const SecuritySection = () => {
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 whitespace-pre-line">
             {error}
           </div>
+        )}
+
+        {success && (
+          <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {!isLoading && (!profiles || profiles.length === 0) && (
+          <p className="text-xs text-gray-500">
+            Hozircha birorta yuz saqlanmagan. Yuz bilan kirish ishlashi uchun avval
+            yuzingizni ro'yxatdan o'tkazing.
+          </p>
         )}
 
         {!isLoading && profiles && profiles.length > 0 && (
@@ -107,6 +123,7 @@ const SecuritySection = () => {
           disabled={enrollMutation.isPending}
           onClick={() => {
             setError(null)
+            setSuccess(null)
             setCameraOpen(true)
           }}
         >

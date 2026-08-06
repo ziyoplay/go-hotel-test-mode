@@ -846,8 +846,8 @@ export function BookingPage() {
   }
 
   const onSubmit = async (values: BookingForm) => {
-    // Surat yuklanmay qolsa — bron yaratilgandan keyin ogohlantiramiz
-    let photoUploadFailed = false
+    // Surat yuklanmay qolsa — bron yaratilgandan keyin sababi bilan ogohlantiramiz
+    let photoUploadError: string | null = null
 
     // Qisman (bo'lib) to'lov qatorlarini yig'amiz: birinchi qator formadan,
     // qo'shimchalari extraPayments dan. Summasi 0 bo'lgan qatorlar tashlanadi.
@@ -920,7 +920,7 @@ export function BookingPage() {
             await uploadGuestFile(guestId, guestPhoto, "photo", hotelId)
           } catch (uploadError) {
             console.error("Surat yuklashda xatolik", uploadError)
-            photoUploadFailed = true
+            photoUploadError = apiErrorMessage(uploadError)
           } finally {
             setPhotoUploading(false)
           }
@@ -1019,9 +1019,9 @@ export function BookingPage() {
       setDiscountType("AMOUNT")
       reset()
 
-      if (photoUploadFailed) {
+      if (photoUploadError) {
         setErrorDialog(
-          "Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi. Suratni keyinroq qayta yuklashingiz mumkin."
+          `Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi: ${photoUploadError}`
         )
       }
     } catch (error: any) {

@@ -73,6 +73,8 @@ export const GuestsPage = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Mehmon saqlanib, lekin surati yuklanmay qolsa — sahifada ogohlantirish
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
 
   const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -136,6 +138,7 @@ export const GuestsPage = () => {
       return;
     }
     setErrorMsg(null);
+    setPhotoWarning(null);
     try {
       if (editing) {
         // Tahrirlash: bo'shatilgan ixtiyoriy maydonlar "" bilan tozalanadi.
@@ -170,8 +173,11 @@ export const GuestsPage = () => {
               "photo",
               editing.hotel_id || user?.hotel_id
             );
-          } catch {
-            // surat yuklanmasa ham o'zgarishlar saqlanadi
+          } catch (e) {
+            // surat yuklanmasa ham o'zgarishlar saqlanadi — lekin sababi ko'rsatiladi
+            setPhotoWarning(
+              "Mehmon saqlandi, lekin suratni yuklab bo'lmadi: " + apiError(e)
+            );
           } finally {
             setUploading(false);
           }
@@ -194,8 +200,11 @@ export const GuestsPage = () => {
           try {
             setUploading(true);
             await uploadGuestFile(guest.id, photo, "photo", user?.hotel_id);
-          } catch {
-            // surat yuklanmasa ham mehmon saqlanadi
+          } catch (e) {
+            // surat yuklanmasa ham mehmon saqlanadi — lekin sababi ko'rsatiladi
+            setPhotoWarning(
+              "Mehmon saqlandi, lekin suratni yuklab bo'lmadi: " + apiError(e)
+            );
           } finally {
             setUploading(false);
           }
@@ -254,6 +263,20 @@ export const GuestsPage = () => {
           </Button>
         )}
       </div>
+
+      {photoWarning && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span>{photoWarning}</span>
+          <button
+            type="button"
+            onClick={() => setPhotoWarning(null)}
+            className="shrink-0 text-amber-600 hover:text-amber-800"
+            aria-label="Yopish"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
