@@ -4,9 +4,19 @@ import axios from "axios";
 // Production buildda esa proxy bo'lmaydi — shuning uchun backendning to'liq manzili
 // ishlatiladi (VITE_API_URL to'liq URL qilib berilsa, o'sha ustun turadi).
 const PROD_URL = "https://gohotel-gohotel-backend-lhyen5-ecceab-13-140-185-49.sslip.io";
+// Test frontend (go-hotel-test-mode) o'zining alohida test backend'iga ulanadi.
+// Dokploy build vaqtida repo .env'ini o'z Environment maydoni bilan almashtirib
+// yuborgani uchun tanlov build-time env'ga emas, sahifa ochilgan domenga qarab
+// runtime'da qilinadi.
+const TEST_FRONTEND_HOST = "gohotel-go-hotel-test-ceiqr0-33ceba-13-140-185-49.sslip.io";
+const TEST_URL = "https://gohotel-backendtest-epycue-df84d6-13-140-185-49.sslip.io";
+const BASE_URL =
+  typeof window !== "undefined" && window.location.hostname === TEST_FRONTEND_HOST
+    ? TEST_URL
+    : PROD_URL;
 const envUrl = import.meta.env.VITE_API_URL || "/api/v1";
 export const API_URL =
-  import.meta.env.DEV || envUrl.startsWith("http") ? envUrl : `${PROD_URL}${envUrl}`;
+  import.meta.env.DEV || envUrl.startsWith("http") ? envUrl : `${BASE_URL}${envUrl}`;
 
 export const api = axios.create({
   baseURL: API_URL,
